@@ -1,8 +1,14 @@
-#
-# application.yml — главный конфигурационный файл Spring Boot.
+server:
+  port: ${SERVER_PORT:8080}
 
-Что нужно сделать:
-  - Указать настройки подключения к базе данных.
-  - Указать порт приложения.
-  - Настроить параметры безопасности и JWT.
-  - Включить Swagger UI.
+spring:
+  application:
+    name: ${APPLICATION_NAME:bank_rest-main}
+
+  datasource:
+    url     : ${DB_URL:jdbc:postgresql://localhost:5432/bank_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  liquibase:
+    change-log: classpath:db/migration/db.changelog-master.yaml
