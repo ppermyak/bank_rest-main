@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3
+      author: Ayaal Permyakov
+      changes:
+        - createTable:
+            tableName: transactions
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: from_card_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_transaction_from_card
+                    references: cards(id)
+              - column:
+                  name: to_card_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_transaction_to_card
+                    references: cards(id)
+              - column:
+                  name: amount
+                  type: DECIMAL(15,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: "COMPLETED"
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
