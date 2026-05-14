@@ -10,6 +10,8 @@ import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.EncryptionUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,5 +50,9 @@ public class CardService {
 
         Card savedCard = cardRepository.save(card);
         return cardMapper.toResponseDto(savedCard);
+    }
+
+    public Page<CardResponseDto> getAllCards(Pageable pageable) {
+        return cardRepository.findAll(pageable).map(cardMapper::toResponseDto);
     }
 }
