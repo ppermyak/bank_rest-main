@@ -16,6 +16,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -44,6 +45,18 @@ public class User {
     @Column(nullable = false, length = 20)
     private Role role;
 
+    @Column(name = "last_name", nullable = false, length = 50)
+    private String lastName;
+
+    @Column(name = "first_name", nullable = false, length = 50)
+    private String firstName;
+
+    @Column(name = "middle_name", length = 50)
+    private String middleName;
+
+    @Column(name = "birth_date", nullable = false)
+    private LocalDate birthDate;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -51,4 +64,8 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public String getOwnerName() {
+        return firstName + " " + lastName;
+    }
 }

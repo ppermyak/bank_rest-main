@@ -14,6 +14,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -46,6 +48,10 @@ public class AuthService {
         User user = new User();
         user.setUsername(request.username());
         user.setEmail(request.email());
+        user.setLastName(request.lastName());
+        user.setFirstName(request.firstName());
+        user.setMiddleName(request.middleName());
+        user.setBirthDate(LocalDate.parse(request.birthDate()));
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(Role.USER);
 
