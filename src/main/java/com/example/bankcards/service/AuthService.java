@@ -5,6 +5,7 @@ import com.example.bankcards.dto.request.RegisterRequestDto;
 import com.example.bankcards.dto.response.AuthResponseDto;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.entity.enums.Role;
+import com.example.bankcards.mapper.UserMapper;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
     public AuthResponseDto login(LoginRequestDto request) {
         Authentication auth = authenticationManager.authenticate(
@@ -45,12 +47,7 @@ public class AuthService {
             throw new RuntimeException("Email already exists");
         }
 
-        User user = new User();
-        user.setUsername(request.username());
-        user.setEmail(request.email());
-        user.setLastName(request.lastName());
-        user.setFirstName(request.firstName());
-        user.setMiddleName(request.middleName());
+        User user = userMapper.toEntity(request);
         user.setBirthDate(LocalDate.parse(request.birthDate()));
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(Role.USER);

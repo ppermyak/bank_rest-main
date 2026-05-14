@@ -5,12 +5,14 @@ import com.example.bankcards.dto.response.CardResponseDto;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.entity.enums.CardStatus;
+import com.example.bankcards.mapper.CardMapper;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.EncryptionUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -22,6 +24,7 @@ public class CardService {
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
     private final EncryptionUtil encryptionUtil;
+    private final CardMapper cardMapper;
 
     @Transactional
     public CardResponseDto createCard(CreateCardRequestDto request) {
@@ -44,14 +47,6 @@ public class CardService {
         card.setUser(user);
 
         Card savedCard = cardRepository.save(card);
-
-        return new CardResponseDto(
-                savedCard.getId(),
-                savedCard.getCardNumberMasked(),
-                savedCard.getOwnerName(),
-                savedCard.getExpiryDate(),
-                savedCard.getStatus().name(),
-                savedCard.getBalance()
-        );
+        return cardMapper.toResponseDto(savedCard);
     }
 }
