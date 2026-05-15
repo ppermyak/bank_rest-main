@@ -16,8 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -29,14 +31,14 @@ public class CardService {
     private final CardMapper cardMapper;
 
     @Transactional
-    public CardResponseDto createCard(CreateCardRequestDto request) {
-        User user = userRepository.findByUsername(request.username())
-                .orElseThrow(() -> new RuntimeException("User not found: " + request.username()));
+    public CardResponseDto createCard(CreateCardRequestDto dto) {
+        User user = userRepository.findByUsername(dto.username())
+                .orElseThrow(() -> new RuntimeException("User not found: " + dto.username()));
 
-        String encryptedCardNumber = encryptionUtil.encrypt(request.cardNumber());
-        String maskedNumber = "**** **** **** " + request.cardNumber().substring(12);
+        String encryptedCardNumber = encryptionUtil.encrypt(dto.cardNumber());
+        String maskedNumber = "**** **** **** " + dto.cardNumber().substring(12);
 
-        YearMonth expiryYearMonth = YearMonth.parse(request.expiryDate(), DateTimeFormatter.ofPattern("MM/yy"));
+        YearMonth expiryYearMonth = YearMonth.parse(dto.expiryDate(), DateTimeFormatter.ofPattern("MM/yy"));
         LocalDate expiryDate = expiryYearMonth.atDay(1);
 
         Card card = new Card();
@@ -54,5 +56,18 @@ public class CardService {
 
     public Page<CardResponseDto> getAllCards(Pageable pageable) {
         return cardRepository.findAll(pageable).map(cardMapper::toResponseDto);
+    }
+
+    @Transactional
+    public CardResponseDto updateCardStatus(UUID cardId, String status) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card not found with id: " + cardId));
+
+        CardStatus newStatus = CardStatus.valueOf(status.toUpperCase());
+        card.setStatus(newStatus);
+        card.setUpdatedAt(LocalDateTime.now());
+
+        Card updatedCard = cardRepository.save(card);
+        return cardMapper.toResponseDto(updatedCard);
     }
 }

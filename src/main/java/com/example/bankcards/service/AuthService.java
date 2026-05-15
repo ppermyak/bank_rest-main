@@ -14,6 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
@@ -38,6 +39,7 @@ public class AuthService {
         return new AuthResponseDto(token, request.username(), role);
     }
 
+    @Transactional
     public AuthResponseDto register(RegisterRequestDto request) {
         if (userRepository.existsByUsername(request.username())) {
             throw new RuntimeException("Username already exists");
