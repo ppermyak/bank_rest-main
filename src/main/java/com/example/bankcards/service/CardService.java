@@ -70,4 +70,12 @@ public class CardService {
         Card updatedCard = cardRepository.save(card);
         return cardMapper.toResponseDto(updatedCard);
     }
+
+    @Transactional
+    public void deleteCard(UUID cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card not found with id: " + cardId));
+
+        cardRepository.delete(card);
+    }
 }
