@@ -1,6 +1,7 @@
 package com.example.bankcards.service;
 
 import com.example.bankcards.dto.request.CreateCardRequestDto;
+import com.example.bankcards.dto.response.CardBalanceResponseDto;
 import com.example.bankcards.dto.response.CardResponseDto;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.User;
@@ -63,7 +64,13 @@ public class CardService {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card not found with id: " + cardId));
 
-        CardStatus newStatus = CardStatus.valueOf(status.toUpperCase());
+        CardStatus newStatus;
+        try {
+            newStatus = CardStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + status + ". Allowed: ACTIVE, BLOCKED, EXPIRED, PENDING_BLOCK");
+        }
+
         card.setStatus(newStatus);
         card.setUpdatedAt(LocalDateTime.now());
 
@@ -77,5 +84,50 @@ public class CardService {
                 .orElseThrow(() -> new RuntimeException("Card not found with id: " + cardId));
 
         cardRepository.delete(card);
+    }
+
+    @Transactional
+    public CardResponseDto blockCard(UUID cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+
+        if (card.getStatus() != CardStatus.PENDING_BLOCK) {
+            throw new RuntimeException("Block request not found for this card");
+        }
+
+        card.setStatus(CardStatus.BLOCKED);
+        return cardMapper.toResponseDto(cardRepository.save(card));
+    }
+
+    public Page<CardResponseDto> getUserCards(String username, Pageable pageable) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        return cardRepository.findByUser(user, pageable)
+                .map(cardMapper::toResponseDto);
+    }
+
+    public CardBalanceResponseDto getCardBalance(UUID cardId, String username) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+
+        if (!card.getUser().getUsername().equals(username)) {
+            throw new RuntimeException("You are not the owner of this card");
+        }
+
+        return new CardBalanceResponseDto(card.getBalance());
+    }
+
+    @Transactional
+    public CardResponseDto requestBlockCard(UUID cardId, String username) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+
+        if (!card.getUser().getUsername().equals(username)) {
+            throw new RuntimeException("You are not the owner of this card");
+        }
+
+        card.setStatus(CardStatus.PENDING_BLOCK);
+        return cardMapper.toResponseDto(cardRepository.save(card));
     }
 }
