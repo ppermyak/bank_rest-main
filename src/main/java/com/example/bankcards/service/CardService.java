@@ -6,6 +6,10 @@ import com.example.bankcards.dto.response.CardResponseDto;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.entity.enums.CardStatus;
+import com.example.bankcards.exception.AccessDeniedException;
+import com.example.bankcards.exception.CardNotFoundException;
+import com.example.bankcards.exception.InvalidCardStatusException;
+import com.example.bankcards.exception.UserNotFoundException;
 import com.example.bankcards.mapper.CardMapper;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
@@ -34,7 +38,7 @@ public class CardService {
     @Transactional
     public CardResponseDto createCard(CreateCardRequestDto dto) {
         User user = userRepository.findByUsername(dto.username())
-                .orElseThrow(() -> new RuntimeException("User not found: " + dto.username()));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + dto.username()));
 
         String encryptedCardNumber = encryptionUtil.encrypt(dto.cardNumber());
         String maskedNumber = "**** **** **** " + dto.cardNumber().substring(12);
@@ -62,13 +66,13 @@ public class CardService {
     @Transactional
     public CardResponseDto updateCardStatus(UUID cardId, String status) {
         Card card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card not found with id: " + cardId));
+                .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + cardId));
 
         CardStatus newStatus;
         try {
             newStatus = CardStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid status: " + status + ". Allowed: ACTIVE, BLOCKED, EXPIRED, PENDING_BLOCK");
+            throw new InvalidCardStatusException("Invalid status: " + status + ". Allowed: ACTIVE, BLOCKED, EXPIRED, PENDING_BLOCK");
         }
 
         card.setStatus(newStatus);
@@ -81,7 +85,7 @@ public class CardService {
     @Transactional
     public void deleteCard(UUID cardId) {
         Card card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card not found with id: " + cardId));
+                .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + cardId));
 
         cardRepository.delete(card);
     }
@@ -89,10 +93,10 @@ public class CardService {
     @Transactional
     public CardResponseDto blockCard(UUID cardId) {
         Card card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card not found"));
+                .orElseThrow(() -> new CardNotFoundException("Card not found"));
 
         if (card.getStatus() != CardStatus.PENDING_BLOCK) {
-            throw new RuntimeException("Block request not found for this card");
+            throw new InvalidCardStatusException("Block request not found for this card. Current status: " + card.getStatus());
         }
 
         card.setStatus(CardStatus.BLOCKED);
@@ -101,7 +105,7 @@ public class CardService {
 
     public Page<CardResponseDto> getUserCards(String username, Pageable pageable) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
 
         return cardRepository.findByUser(user, pageable)
                 .map(cardMapper::toResponseDto);
@@ -109,10 +113,10 @@ public class CardService {
 
     public CardBalanceResponseDto getCardBalance(UUID cardId, String username) {
         Card card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card not found"));
+                .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + cardId));
 
         if (!card.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("You are not the owner of this card");
+            throw new AccessDeniedException("You are not the owner of this card");
         }
 
         return new CardBalanceResponseDto(card.getBalance());
@@ -121,10 +125,10 @@ public class CardService {
     @Transactional
     public CardResponseDto requestBlockCard(UUID cardId, String username) {
         Card card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card not found"));
+                .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + cardId));
 
         if (!card.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("You are not the owner of this card");
+            throw new AccessDeniedException("You are not the owner of this card");
         }
 
         card.setStatus(CardStatus.PENDING_BLOCK);

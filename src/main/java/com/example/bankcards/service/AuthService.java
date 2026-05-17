@@ -5,6 +5,8 @@ import com.example.bankcards.dto.request.RegisterRequestDto;
 import com.example.bankcards.dto.response.AuthResponseDto;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.entity.enums.Role;
+import com.example.bankcards.exception.EmailAlreadyExistsException;
+import com.example.bankcards.exception.UserAlreadyExistsException;
 import com.example.bankcards.mapper.UserMapper;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.JwtUtil;
@@ -42,11 +44,11 @@ public class AuthService {
     @Transactional
     public AuthResponseDto register(RegisterRequestDto request) {
         if (userRepository.existsByUsername(request.username())) {
-            throw new RuntimeException("Username already exists");
+            throw new UserAlreadyExistsException("Username already exists: " + request.username());
         }
 
         if (userRepository.existsByEmail(request.email())) {
-            throw new RuntimeException("Email already exists");
+            throw new EmailAlreadyExistsException("Email already exists: " + request.email());
         }
 
         User user = userMapper.toEntity(request);
