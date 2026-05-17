@@ -5,6 +5,12 @@ import com.example.bankcards.dto.request.UpdateCardStatusRequestDto;
 import com.example.bankcards.dto.response.CardBalanceResponseDto;
 import com.example.bankcards.dto.response.CardResponseDto;
 import com.example.bankcards.service.CardService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,16 +35,31 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/cards")
 @RequiredArgsConstructor
+@Tag(name = "Card Management", description = "API для управления банковскими картами")
 public class CardController {
 
     private final CardService cardService;
 
+    @Operation(summary = "Создание карты", description = "Только для ADMIN. Создаёт карту для указанного пользователя")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Карта создана",
+                    content = @Content(schema = @Schema(implementation = CardResponseDto.class))),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён (требуется роль ADMIN)"),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден"),
+            @ApiResponse(responseCode = "400", description = "Неверные данные")
+    })
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CardResponseDto> createCard(@Valid @RequestBody CreateCardRequestDto request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(cardService.createCard(request));
     }
 
+    @Operation(summary = "Все карты", description = "Только для ADMIN. Получение всех карт с пагинацией")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успешное получение списка карт",
+                    content = @Content(schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён (требуется роль ADMIN)")
+    })
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<CardResponseDto>> getAllCards(
@@ -48,6 +69,14 @@ public class CardController {
         return ResponseEntity.ok(cardService.getAllCards(pageable));
     }
 
+    @Operation(summary = "Изменение статуса карты", description = "Только для ADMIN. Блокировка/активация карты")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Статус обновлён",
+                    content = @Content(schema = @Schema(implementation = CardResponseDto.class))),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён (требуется роль ADMIN)"),
+            @ApiResponse(responseCode = "404", description = "Карта не найдена"),
+            @ApiResponse(responseCode = "400", description = "Неверный статус")
+    })
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CardResponseDto> updateCardStatus(
@@ -56,6 +85,12 @@ public class CardController {
         return ResponseEntity.ok(cardService.updateCardStatus(id, request.status()));
     }
 
+    @Operation(summary = "Удаление карты", description = "Только для ADMIN. Удаление карты из системы")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Карта удалена"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён (требуется роль ADMIN)"),
+            @ApiResponse(responseCode = "404", description = "Карта не найдена")
+    })
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteCard(@PathVariable UUID id) {
@@ -63,12 +98,27 @@ public class CardController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Подтверждение блокировки карты", description = "Только для ADMIN. Подтверждает запрос на блокировку")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Карта заблокирована",
+                    content = @Content(schema = @Schema(implementation = CardResponseDto.class))),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён (требуется роль ADMIN)"),
+            @ApiResponse(responseCode = "404", description = "Карта не найдена"),
+            @ApiResponse(responseCode = "400", description = "Нет запроса на блокировку")
+    })
     @PatchMapping("/{id}/block")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CardResponseDto> confirmBlockCard(@PathVariable UUID id) {
         return ResponseEntity.ok(cardService.blockCard(id));
     }
 
+    @Operation(summary = "Запрос на блокировку карты", description = "Только для USER. Отправляет запрос на блокировку карты")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Запрос отправлен (статус PENDING_BLOCK)",
+                    content = @Content(schema = @Schema(implementation = CardResponseDto.class))),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён (требуется роль USER)"),
+            @ApiResponse(responseCode = "404", description = "Карта не найдена")
+    })
     @PostMapping("/{id}/block-request")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<CardResponseDto> requestBlockCard(
@@ -77,6 +127,12 @@ public class CardController {
         return ResponseEntity.ok(cardService.requestBlockCard(id, principal.getName()));
     }
 
+    @Operation(summary = "Мои карты", description = "Только для USER. Получение списка своих карт с пагинацией")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успешное получение списка карт",
+                    content = @Content(schema = @Schema(implementation = Page.class))),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён (требуется роль USER)")
+    })
     @GetMapping()
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Page<CardResponseDto>> getMyCards(
@@ -87,6 +143,13 @@ public class CardController {
         return ResponseEntity.ok(cardService.getUserCards(principal.getName(), pageable));
     }
 
+    @Operation(summary = "Баланс карты", description = "Только для USER. Получение баланса своей карты")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успешное получение баланса",
+                    content = @Content(schema = @Schema(implementation = CardBalanceResponseDto.class))),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён (не владелец карты)"),
+            @ApiResponse(responseCode = "404", description = "Карта не найдена")
+    })
     @GetMapping("/{id}/balance")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<CardBalanceResponseDto> getCardBalance(@PathVariable UUID id, Principal principal) {

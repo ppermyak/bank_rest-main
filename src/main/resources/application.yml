@@ -19,3 +19,11 @@ jwt:
 
 encryption:
   secret: ${ENCRYPTION_SECRET:8xK!mP9qR0sT2uV4wY6zA1cE3gH5jL7nQ9}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+  api-docs:
+    path: /api-docs
